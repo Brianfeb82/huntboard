@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.dirname(new URL(import.meta.url).pathname),
   },
+  serverExternalPackages: ["pg", "@prisma/adapter-pg"],
 };
 
 export default nextConfig;
