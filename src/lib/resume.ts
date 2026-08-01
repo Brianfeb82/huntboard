@@ -1,0 +1,56 @@
+import { PDFParse } from "pdf-parse";
+import { put } from "@vercel/blob";
+
+export type StoredResumeFile = {
+  fileUrl: string;
+  storage: "blob" | "local";
+};
+
+export const BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
+export function isBlobConfigured() {
+  return Boolean(BLOB_READ_WRITE_TOKEN);
+}
+
+export async function extractPdfText(buffer: Buffer) {
+  const parser = new PDFParse({ data: buffer });
+  try {
+    const result = await parser.getText();
+    const text = result.text?.trim() ?? "";
+    if (!text) {
+      throw new Error("No text could be extracted from this PDF");
+    }
+    return text;
+  } finally {
+    await parser.destroy();
+  }
+}
+
+export async function storeResumeFile(
+  file: File
+): Promise<StoredResumeFile> {
+  if (!isBlobConfigured()) {
+    // Local dev fallback: save to .local-storage so the flow works without
+    // a Vercel Blob token. Replaced by Blob in production automatically.
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const name = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const fs = await import("node:fs/promises");
+    await fs.mkdir(".local-storage", { recursive: true });
+    await fs.writeFile(`.local-storage/${name}`, bytes);
+    return { fileUrl: `/local-resume/${name}`, storage: "local" };
+  }
+
+  const blob = await put(file.name, file, { access: "public" });
+  return { fileUrl: blob.url, storage: "blob" };
+}
+
+export async function deleteStoredResumeFile(fileUrl: string) {
+  if (fileUrl.startsWith("/local-resume/")) {
+    const fs = await import("node:fs/promises");
+    const name = fileUrl.replace("/local-resume/", "");
+    await fs.unlink(`.local-storage/${name}`).catch(() => {});
+    return;
+  }
+  const { del } = await import("@vercel/blob");
+  await del(fileUrl).catch(() => {});
+}
