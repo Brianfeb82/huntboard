@@ -9,13 +9,13 @@ A fullstack Next.js job application tracker with AI-powered resume tailoring. Bu
 
 ## Features
 
-- 🎯 **Kanban Board** — Drag and drop applications between stages (Applied, Interview, Offer, Rejected)
-- 🤖 **AI Resume Tailoring** — Match your resume against job descriptions, get keyword gaps and tailored suggestions
-- 📊 **Dashboard Analytics** — Track application stats, response rates, and upcoming deadlines
-- 📄 **Resume Management** — Upload PDFs, automatic text extraction
-- 🔐 **Secure Auth** — NextAuth.js with credentials provider
-- 📱 **Mobile Responsive** — Works seamlessly on all devices
-- 🎨 **Modern UI** — Built with shadcn/ui + Tailwind CSS
+-  **Kanban Board** — Drag and drop applications between stages (Applied, Interview, Offer, Rejected)
+-  **AI Resume Tailoring** — Match your resume against job descriptions, get keyword gaps and tailored suggestions
+-  **Dashboard Analytics** — Track application stats, response rates, and upcoming deadlines
+-  **Resume Management** — Upload PDFs, automatic text extraction
+-  **Secure Auth** — NextAuth.js with credentials provider
+-  **Mobile Responsive** — Works seamlessly on all devices
+-  **Modern UI** — Built with shadcn/ui + Tailwind CSS
 
 ## Tech Stack
 
