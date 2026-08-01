@@ -58,7 +58,7 @@ export function ResumeUpload() {
       event.currentTarget.reset();
       setFileName("");
       router.refresh();
-    } catch (error) {
+    } catch {
       setError("Network error. Check your connection and try again.");
     } finally {
       setUploading(false);

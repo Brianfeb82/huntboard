@@ -1,4 +1,3 @@
-import { PDFParse } from "pdf-parse";
 import { put } from "@vercel/blob";
 
 export type StoredResumeFile = {
@@ -13,6 +12,11 @@ export function isBlobConfigured() {
 }
 
 export async function extractPdfText(buffer: Buffer) {
+  // pdfjs needs DOMMatrix/ImageData/Path2D in Node/Vercel. Load the worker
+  // shim before importing PDFParse so serverless cold starts do not crash.
+  await import("pdf-parse/worker");
+  const { PDFParse } = await import("pdf-parse");
+
   const parser = new PDFParse({ data: buffer });
   try {
     const result = await parser.getText();
