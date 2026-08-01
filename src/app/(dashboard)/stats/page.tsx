@@ -1,78 +1,16 @@
-import { Briefcase, CalendarClock, MessageSquare, TrendingUp } from "lucide-react";
+import { Briefcase, CalendarClock, Clock, MessageSquare, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusPieChart } from "@/components/dashboard/status-pie-chart";
 import { TimelineChart } from "@/components/dashboard/timeline-chart";
 import { getCurrentUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
-import type { DashboardStats } from "@/types/stats";
-
-async function getStats(userId: string): Promise<DashboardStats> {
-  const [applications, interviewCount] = await Promise.all([
-    prisma.application.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        createdAt: true,
-        deadline: true,
-        company: true,
-        role: true,
-        _count: { select: { interviews: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.interview.count({
-      where: { application: { userId } },
-    }),
-  ]);
-
-  const total = applications.length;
-  const byStatus = {
-    APPLIED: applications.filter((app) => app.status === "APPLIED").length,
-    INTERVIEW: applications.filter((app) => app.status === "INTERVIEW").length,
-    OFFER: applications.filter((app) => app.status === "OFFER").length,
-    REJECTED: applications.filter((app) => app.status === "REJECTED").length,
-  };
-
-  const responseRate =
-    total > 0 ? Math.round(((byStatus.INTERVIEW + byStatus.OFFER) / total) * 100) : 0;
-
-  const now = new Date();
-  const upcomingDeadlines = applications
-    .filter((app) => app.deadline && new Date(app.deadline) >= now)
-    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
-    .slice(0, 5)
-    .map((app) => ({
-      company: app.company,
-      role: app.role,
-      deadline: app.deadline!.toISOString(),
-    }));
-
-  const monthlyData: Record<string, number> = {};
-  applications.forEach((app) => {
-    const month = app.createdAt.toISOString().slice(0, 7);
-    monthlyData[month] = (monthlyData[month] || 0) + 1;
-  });
-
-  const timeline = Object.entries(monthlyData)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, count]) => ({ month, count }));
-
-  return {
-    total,
-    byStatus,
-    responseRate,
-    interviewCount,
-    upcomingDeadlines,
-    timeline,
-  };
-}
+import { computeStats } from "@/lib/stats";
 
 export default async function StatsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const stats = await getStats(user.id);
+  const stats = await computeStats(user.id);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -81,7 +19,7 @@ export default async function StatsPage() {
         <p className="mt-1 text-muted-foreground">Overview of your job search progress</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Total Applications"
           value={stats.total}
@@ -93,6 +31,12 @@ export default async function StatsPage() {
           value={`${stats.responseRate}%`}
           subtitle={`${stats.byStatus.INTERVIEW + stats.byStatus.OFFER} responses`}
           icon={<TrendingUp className="size-4 text-muted-foreground" />}
+        />
+        <StatCard
+          title="Avg Days to Response"
+          value={stats.avgDaysToResponse === null ? "—" : stats.avgDaysToResponse}
+          subtitle={stats.avgDaysToResponse === null ? "no interviews yet" : "application to first interview"}
+          icon={<Clock className="size-4 text-muted-foreground" />}
         />
         <StatCard
           title="Interviews"

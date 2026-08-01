@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
-  data: Array<{ month: string; count: number }>;
+  data: Array<{ week: string; count: number }>;
 };
 
 export function TimelineChart({ data }: Props) {
@@ -30,7 +30,7 @@ export function TimelineChart({ data }: Props) {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
+            <XAxis dataKey="week" />
             <YAxis allowDecimals={false} />
             <Tooltip />
             <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} />
