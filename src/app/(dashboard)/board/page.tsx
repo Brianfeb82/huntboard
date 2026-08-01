@@ -1,10 +1,15 @@
-export default function BoardPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold">Board</h1>
-      <p className="mt-2 text-muted-foreground">
-        Kanban board lands here in Phase 3.
-      </p>
-    </div>
-  );
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
+import { Board } from "@/components/kanban/board";
+
+export default async function BoardPage() {
+  const user = await getCurrentUser();
+  const applications = user
+    ? await prisma.application.findMany({
+        where: { userId: user.id },
+        orderBy: { updatedAt: "desc" },
+      })
+    : [];
+
+  return <Board initialApplications={JSON.parse(JSON.stringify(applications))} />;
 }
