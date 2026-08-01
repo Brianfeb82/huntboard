@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     
     const [contentText, stored] = await Promise.all([
       extractPdfText(buffer),
-      storeResumeFile(file),
+      storeResumeFile(file.name, buffer),
     ]);
 
     const resume = await prisma.resume.create({

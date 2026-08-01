@@ -27,20 +27,20 @@ export async function extractPdfText(buffer: Buffer) {
 }
 
 export async function storeResumeFile(
-  file: File
+  filename: string,
+  buffer: Buffer
 ): Promise<StoredResumeFile> {
   if (!isBlobConfigured()) {
     // Local dev fallback: save to .local-storage so the flow works without
     // a Vercel Blob token. Replaced by Blob in production automatically.
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const name = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const name = `${crypto.randomUUID()}-${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const fs = await import("node:fs/promises");
     await fs.mkdir(".local-storage", { recursive: true });
-    await fs.writeFile(`.local-storage/${name}`, bytes);
+    await fs.writeFile(`.local-storage/${name}`, buffer);
     return { fileUrl: `/local-resume/${name}`, storage: "local" };
   }
 
-  const blob = await put(file.name, file, { access: "public" });
+  const blob = await put(filename, buffer, { access: "public" });
   return { fileUrl: blob.url, storage: "blob" };
 }
 
