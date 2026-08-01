@@ -44,11 +44,13 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Extract text first so a broken PDF fails before any storage write.
+    // Extract text and upload in parallel to save time
     const buffer = Buffer.from(await file.arrayBuffer());
-    const contentText = await extractPdfText(buffer);
-
-    const stored = await storeResumeFile(file);
+    
+    const [contentText, stored] = await Promise.all([
+      extractPdfText(buffer),
+      storeResumeFile(file),
+    ]);
 
     const resume = await prisma.resume.create({
       data: {
@@ -62,10 +64,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ resume }, { status: 201 });
   } catch (error) {
     console.error("Resume upload error:", error);
-    return NextResponse.json(
-      { error: "Could not read this PDF. It may be scanned or password-protected. You can paste your resume text manually instead." },
-      { status: 422 }
-    );
+    const message = error instanceof Error && error.message.includes("No text could be extracted")
+      ? "Could not read this PDF. It may be scanned or password-protected. You can paste your resume text manually instead."
+      : "Upload failed. Try a smaller PDF or paste your resume text manually.";
+    return NextResponse.json({ error: message }, { status: 422 });
   }
 }
 

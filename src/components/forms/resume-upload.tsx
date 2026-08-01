@@ -17,31 +17,53 @@ export function ResumeUpload() {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<string | null>(null);
 
   async function uploadFile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
     if (!file) return;
 
+    // Warn about large files
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > 5) {
+      const proceed = confirm(
+        `This PDF is ${sizeMB.toFixed(1)} MB. Large files may take 10-30 seconds to process.\n\n` +
+        `For faster uploads:\n` +
+        `• Compress the PDF (use a tool like smallpdf.com)\n` +
+        `• Or use "Paste text" mode instead\n\n` +
+        `Continue with upload?`
+      );
+      if (!proceed) return;
+    }
+
     setUploading(true);
     setError(null);
+    setUploadStage("Uploading and extracting text...");
+    
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("/api/resumes", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await response.json();
-    setUploading(false);
+    try {
+      const response = await fetch("/api/resumes", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
 
-    if (!response.ok) {
-      setError(data.error ?? "Upload failed");
-      return;
+      if (!response.ok) {
+        setError(data.error ?? "Upload failed");
+        return;
+      }
+      event.currentTarget.reset();
+      setFileName("");
+      router.refresh();
+    } catch (error) {
+      setError("Network error. Check your connection and try again.");
+    } finally {
+      setUploading(false);
+      setUploadStage(null);
     }
-    event.currentTarget.reset();
-    setFileName("");
-    router.refresh();
   }
 
   async function saveText(event: React.FormEvent<HTMLFormElement>) {
@@ -101,7 +123,9 @@ export function ResumeUpload() {
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors hover:bg-muted/50">
             <FileText className="size-8 text-muted-foreground" />
             <span className="font-medium">{fileName || "Choose a PDF resume"}</span>
-            <span className="text-sm text-muted-foreground">PDF, up to 10 MB</span>
+            <span className="text-sm text-muted-foreground">
+              PDF, up to 10 MB · Smaller files upload faster
+            </span>
             <Input
               ref={fileRef}
               type="file"
@@ -111,8 +135,9 @@ export function ResumeUpload() {
             />
           </label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {uploadStage && <p className="text-sm text-muted-foreground">{uploadStage}</p>}
           <Button type="submit" disabled={uploading || !fileName}>
-            {uploading ? "Uploading..." : "Upload resume"}
+            {uploading ? uploadStage || "Processing..." : "Upload resume"}
           </Button>
         </form>
       ) : (
